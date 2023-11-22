@@ -1,0 +1,64 @@
+LEX
+
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+[0-9]+          { yylval = atoi(yytext); return NUM; }
+[-+*/\n]        { return *yytext; }
+[ \t]           ;  /* Skip whitespace */
+.               ;
+
+%%
+
+int yywrap() {
+    return 1;
+}
+
+YACC
+
+%{
+#include <stdio.h>
+
+// Forward declaration of the lexer function
+int yylex();
+
+void yyerror(const char* s) {
+    fprintf(stderr, "%s\n", s);
+}
+
+#define YYDEBUG 1  // Enable debug output
+%}
+
+%token NUM
+
+%left '+' '-'
+%left '*' '/'
+
+%%
+
+statement: expr '\n'    { printf("Result: %d\n", $1); }
+         ;
+
+expr: expr '+' term    { $$ = $1 + $3; }
+    | expr '-' term    { $$ = $1 - $3; }
+    | term             { $$ = $1; }
+    ;
+
+term: term '*' factor  { $$ = $1 * $3; }
+    | term '/' factor  { $$ = $1 / $3; }
+    | factor           { $$ = $1; }
+    ;
+
+factor: NUM            { $$ = $1; }
+      | '(' expr ')'   { $$ = $2; }
+      ;
+
+%%
+
+int main() {
+    yyparse();
+    return 0;
+}
